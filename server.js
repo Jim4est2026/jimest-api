@@ -1,88 +1,43 @@
 const express = require("express");
 const cors = require("cors");
+const OpenAI = require("openai");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
-
-// Simple API key middleware
-const API_KEY = process.env.API_KEY || "testkey123";
-
-function auth(req, res, next) {
-  const header = req.headers["authorization"];
-  if (!header || header !== `Bearer ${API_KEY}`) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
-  }
-  next();
-}
-
-// In-memory storage
-let leads = [];
-let followups = [];
-
-// Save Lead
-app.post("/api/leads", auth, (req, res) => {
-  const lead = {
-    id: Date.now().toString(),
-    ...req.body,
-  };
-
-  leads.push(lead);
-
-  res.json({
-    success: true,
-    leadId: lead.id,
-    message: "Lead saved successfully",
-  });
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Draft Outreach
-app.post("/api/outreach/draft", auth, (req, res) => {
-  const { targetName, purpose } = req.body;
-
-  const messageDraft = `Hi ${targetName}, I wanted to reach out regarding ${purpose}. Let me know if you're open to chatting!`;
-
-  res.json({
-    success: true,
-    messageDraft,
-  });
-});
-
-// Schedule Follow-up
-app.post("/api/followups", auth, (req, res) => {
-  const followup = {
-    id: Date.now().toString(),
-    ...req.body,
-  };
-
-  followups.push(followup);
-
-  res.json({
-    success: true,
-    followupId: followup.id,
-    message: "Follow-up scheduled",
-  });
-});
-
-// Daily Summary
-app.get("/api/summary/daily", auth, (req, res) => {
-  res.json({
-    success: true,
-    date: new Date().toISOString().split("T")[0],
-    newLeads: leads.length,
-    followupsDue: followups.length,
-    bookedJobs: 0,
-    notes: ["System running"],
-  });
-});
-
-// Health check
 app.get("/", (req, res) => {
   res.send("Jimest API is running");
 });
 
+app.post("/chat", async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    const response = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: `You are Jimest, an AI business assistant. Help the user build businesses.\n\nUser: ${message}`
+    });
+
+    res.json({
+      reply: response.output_text
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("Server running on port " + PORT);
 });
