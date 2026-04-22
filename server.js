@@ -2,13 +2,13 @@ const express = require("express");
 const cors = require("cors");
 const OpenAI = require("openai");
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+let client = null;
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+if (process.env.OPENAI_API_KEY) {
+  client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 app.get("/", (req, res) => {
   res.send("Jimest API is running");
@@ -16,6 +16,10 @@ app.get("/", (req, res) => {
 
 app.post("/chat", async (req, res) => {
   try {
+    if (!client) {
+      return res.status(500).json({ error: "OPENAI_API_KEY is missing in Railway" });
+    }
+
     const { message } = req.body;
 
     if (!message) {
