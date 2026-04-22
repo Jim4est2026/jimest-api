@@ -2,6 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const OpenAI = require("openai");
 
+const app = express();
+app.use(cors());
+app.use(express.json());
+
 let client = null;
 
 if (process.env.OPENAI_API_KEY) {
@@ -9,6 +13,8 @@ if (process.env.OPENAI_API_KEY) {
     apiKey: process.env.OPENAI_API_KEY,
   });
 }
+
+console.log("Has OPENAI key:", !!process.env.OPENAI_API_KEY);
 
 app.get("/", (req, res) => {
   res.send("Jimest API is running");
@@ -28,16 +34,17 @@ app.post("/chat", async (req, res) => {
 
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
-      input: `You are Jimest, an AI business assistant. Help the user build businesses.\n\nUser: ${message}`
+      input: `You are Jimest, an AI business assistant. Help the user build businesses.\n\nUser: ${message}`,
     });
 
     res.json({
-      reply: response.output_text
+      reply: response.output_text,
     });
-
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Something went wrong" });
+    console.error("OpenAI error:", err);
+    res.status(500).json({
+      error: err.message || "Something went wrong",
+    });
   }
 });
 
