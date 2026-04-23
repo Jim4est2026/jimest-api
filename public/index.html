@@ -18,7 +18,7 @@
 
     .chat-container {
       width: 90%;
-      max-width: 700px;
+      max-width: 800px;
       background: #1f2937;
       border-radius: 16px;
       padding: 20px;
@@ -34,7 +34,7 @@
       background: #0f172a;
       border-radius: 12px;
       padding: 15px;
-      height: 350px;
+      height: 420px;
       overflow-y: auto;
       margin-bottom: 15px;
       white-space: pre-wrap;
@@ -42,8 +42,10 @@
 
     .message {
       margin-bottom: 12px;
-      padding: 10px;
+      padding: 12px;
       border-radius: 10px;
+      white-space: pre-wrap;
+      line-height: 1.4;
     }
 
     .user {
@@ -80,6 +82,27 @@
     button:hover {
       background: #059669;
     }
+
+    .option-buttons {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .option-button {
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .option-button:hover {
+      background: #4f46e5;
+    }
   </style>
 </head>
 <body>
@@ -89,106 +112,102 @@
 
     <div class="input-row">
       <input id="messageInput" type="text" placeholder="Ask Jimest something..." />
-      <button onclick="sendMessage()">Send</button>
+      <button id="sendButton">Send</button>
     </div>
   </div>
 
   <script>
-  const messagesDiv = document.getElementById("messages");
-  const messageInput = document.getElementById("messageInput");
+    const messagesDiv = document.getElementById("messages");
+    const messageInput = document.getElementById("messageInput");
+    const sendButton = document.getElementById("sendButton");
 
-  function addMessage(text, sender) {
-    const div = document.createElement("div");
-    div.className = `message ${sender}`;
-    div.style.whiteSpace = "pre-wrap";
+    function addMessage(text, sender) {
+      const div = document.createElement("div");
+      div.className = "message " + sender;
 
-    const marker = "## Next Step Options";
+      const marker = "## Next Step Options";
+      const markerIndex = text.indexOf(marker);
 
-    if (text.includes(marker)) {
-      const splitIndex = text.indexOf(marker);
-      const mainText = text.slice(0, splitIndex).trim();
-      const optionsText = text.slice(splitIndex + marker.length).trim();
+      if (markerIndex !== -1) {
+        const mainText = text.substring(0, markerIndex).trim();
+        const optionsPart = text.substring(markerIndex + marker.length).trim();
 
-      const textBlock = document.createElement("div");
-      textBlock.textContent = mainText;
-      div.appendChild(textBlock);
+        const textBlock = document.createElement("div");
+        textBlock.textContent = mainText;
+        div.appendChild(textBlock);
 
-      const buttonContainer = document.createElement("div");
-      buttonContainer.style.marginTop = "12px";
-      buttonContainer.style.display = "flex";
-      buttonContainer.style.flexWrap = "wrap";
-      buttonContainer.style.gap = "8px";
+        const buttonContainer = document.createElement("div");
+        buttonContainer.className = "option-buttons";
 
-      const lines = optionsText.split("\n");
+        const lines = optionsPart.split("\n");
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          const match = line.match(/^\d+\.\s+(.*)$/);
+          if (match) {
+            const optionText = match[1];
 
-      lines.forEach(line => {
-        const trimmed = line.trim();
-        const match = trimmed.match(/^\d+\.\s+(.*)/);
+            const btn = document.createElement("button");
+            btn.className = "option-button";
+            btn.textContent = optionText;
+            btn.onclick = function () {
+              sendMessage(optionText);
+            };
 
-        if (match) {
-          const option = match[1];
-
-          const btn = document.createElement("button");
-          btn.textContent = option;
-          btn.style.padding = "10px 14px";
-          btn.style.borderRadius = "10px";
-          btn.style.border = "none";
-          btn.style.cursor = "pointer";
-          btn.style.background = "#6366f1";
-          btn.style.color = "white";
-
-          btn.onclick = () => sendMessage(option);
-          buttonContainer.appendChild(btn);
+            buttonContainer.appendChild(btn);
+          }
         }
-      });
 
-      div.appendChild(buttonContainer);
-    } else {
-      div.textContent = text;
-    }
-
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  }
-
-  async function sendMessage(customMessage = null) {
-    const message = customMessage || messageInput.value.trim();
-    if (!message) return;
-
-    addMessage("You: " + message, "user");
-
-    if (!customMessage) {
-      messageInput.value = "";
-    }
-
-    try {
-      const response = await fetch("/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ message })
-      });
-
-      const data = await response.json();
-
-      if (data.reply) {
-        addMessage("Jimest: " + data.reply, "assistant");
-      } else if (data.error) {
-        addMessage("Error: " + data.error, "assistant");
+        div.appendChild(buttonContainer);
       } else {
-        addMessage("Jimest: No response received.", "assistant");
+        div.textContent = text;
       }
-    } catch (error) {
-      addMessage("Error: Could not reach Jimest.", "assistant");
-    }
-  }
 
-  messageInput.addEventListener("keypress", function(event) {
-    if (event.key === "Enter") {
-      sendMessage();
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
-  });
-</script>
+
+    async function sendMessage(customMessage) {
+      const message = customMessage || messageInput.value.trim();
+      if (!message) return;
+
+      addMessage("You: " + message, "user");
+
+      if (!customMessage) {
+        messageInput.value = "";
+      }
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ message: message })
+        });
+
+        const data = await response.json();
+
+        if (data.reply) {
+          addMessage("Jimest: " + data.reply, "assistant");
+        } else if (data.error) {
+          addMessage("Error: " + data.error, "assistant");
+        } else {
+          addMessage("Jimest: No response received.", "assistant");
+        }
+      } catch (error) {
+        addMessage("Error: Could not reach Jimest.", "assistant");
+      }
+    }
+
+    sendButton.addEventListener("click", function () {
+      sendMessage();
+    });
+
+    messageInput.addEventListener("keypress", function (event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    });
+  </script>
 </body>
 </html>
