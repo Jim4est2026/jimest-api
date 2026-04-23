@@ -5,6 +5,7 @@ const OpenAI = require("openai");
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static("public"));
 
 let client = null;
 
@@ -15,10 +16,6 @@ if (process.env.OPENAI_API_KEY) {
 }
 
 console.log("Has OPENAI key:", !!process.env.OPENAI_API_KEY);
-
-app.get("/", (req, res) => {
-  res.send("Jimest API is running");
-});
 
 app.post("/chat", async (req, res) => {
   try {
