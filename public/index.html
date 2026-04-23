@@ -102,7 +102,7 @@
   div.className = `message ${sender}`;
 
   // Detect Next Step Options
-  if (text.includes("## Next Step Options")) {
+  if (text.toLowerCase().includes("next step options")) {
     const parts = text.split("## Next Step Options");
     div.textContent = parts[0];
 
