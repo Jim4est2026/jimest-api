@@ -31,7 +31,29 @@ app.post("/chat", async (req, res) => {
       return res.status(500).json({ error: "OPENAI_API_KEY is missing in Railway" });
     }
 
-    const { message } = req.body;
+    // --- AUTO MEMORY UPDATE ---
+const lowerMessage = message.toLowerCase();
+
+if (lowerMessage.includes("budget")) {
+  const match = message.match(/\$?\d+/);
+  if (match) {
+    businessMemory.budget = match[0];
+  }
+}
+
+if (lowerMessage.includes("target")) {
+  if (lowerMessage.includes("freelancer")) {
+    businessMemory.targetCustomer = "freelancers";
+  } else if (lowerMessage.includes("small business")) {
+    businessMemory.targetCustomer = "small business owners";
+  }
+}
+
+if (lowerMessage.includes("idea")) {
+  if (lowerMessage.includes("bookkeeping")) {
+    businessMemory.businessIdea = "online bookkeeping business";
+  }
+}
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
