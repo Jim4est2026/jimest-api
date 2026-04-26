@@ -1,335 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jimest Chat</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111827;
-      color: white;
-      min-height: 100vh;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+<meta charset="UTF-8">
+<title>Jimest</title>
 
-    .app-layout {
-      display: grid;
-      grid-template-columns: 260px minmax(400px, 800px) 300px;
-      gap: 20px;
-      width: 95%;
-      max-width: 1400px;
-      align-items: start;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+}
 
-    .panel, .chat-container {
-      background: #1f2937;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
+.app {
+  display: grid;
+  grid-template-columns: 250px 1fr 300px;
+  height: 100vh;
+}
 
-    .panel {
-      font-size: 14px;
-    }
+/* Panels */
+.panel {
+  background: #1e293b;
+  padding: 15px;
+  overflow-y: auto;
+}
 
-    .panel h2 {
-      margin-top: 0;
-      font-size: 18px;
-    }
+.panel h3 {
+  margin-top: 0;
+}
 
-    #memoryContent p {
-      margin: 8px 0;
-    }
+/* Chat */
+.chat {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
 
-    .chat-container {
-      width: 100%;
-    }
+#messages {
+  flex: 1;
+  overflow-y: auto;
+}
 
-    h1 {
-      margin-top: 0;
-      text-align: center;
-    }
+.message {
+  margin-bottom: 10px;
+}
 
-    #messages {
-      background: #0f172a;
-      border-radius: 12px;
-      padding: 15px;
-      height: 420px;
-      overflow-y: auto;
-      margin-bottom: 15px;
-      white-space: pre-wrap;
-    }
+.user {
+  color: #22c55e;
+}
 
-    .message {
-      margin-bottom: 12px;
-      padding: 12px;
-      border-radius: 10px;
-      white-space: pre-wrap;
-      line-height: 1.4;
-    }
+.assistant {
+  color: #60a5fa;
+}
 
-    .user {
-      background: #2563eb;
-    }
+/* Input */
+.input-area {
+  display: flex;
+  margin-top: 10px;
+}
 
-    .assistant {
-      background: #374151;
-    }
+input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+}
 
-    .input-row {
-      display: flex;
-      gap: 10px;
-    }
+button {
+  margin-left: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: #22c55e;
+  color: white;
+  cursor: pointer;
+}
 
-    #messageInput {
-      flex: 1;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
-    }
-
-    button {
-      padding: 12px 18px;
-      border: none;
-      border-radius: 10px;
-      background: #10b981;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #059669;
-    }
-
-    .option-buttons {
-      margin-top: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .option-button {
-      background: #6366f1;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 14px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .option-button:hover {
-      background: #4f46e5;
-    }
-
-    .asset {
-      background: #111827;
-      border-radius: 10px;
-      padding: 10px;
-      margin-bottom: 10px;
-      border: 1px solid #374151;
-    }
-
-    .asset-title {
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
-
-    .asset-content {
-      font-size: 12px;
-      color: #d1d5db;
-      max-height: 100px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-    }
-
-    @media (max-width: 1000px) {
-      .app-layout {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+/* Buttons */
+.option-buttons button {
+  margin: 5px 5px 0 0;
+  background: #6366f1;
+}
+</style>
 </head>
+
 <body>
-  <div class="app-layout">
-    <div class="panel">
-      <h2>🧠 Jimest Memory</h2>
-      <div id="memoryContent">Loading...</div>
-    </div>
 
-    <div class="chat-container">
-      <h1>Jimest</h1>
-      <div id="messages"></div>
+<div class="app">
 
-      <div class="input-row">
-        <input id="messageInput" type="text" placeholder="Ask Jimest something..." />
-        <button id="sendButton">Send</button>
-      </div>
-    </div>
+  <!-- LEFT: MEMORY -->
+  <div class="panel">
+    <h3>🧠 Memory</h3>
+    <div id="memory"></div>
+  </div>
 
-    <div class="panel">
-      <h2>📁 Saved Assets</h2>
-      <div id="assetsContent">No assets saved yet.</div>
+  <!-- CENTER: CHAT -->
+  <div class="chat">
+    <h2>Jimest</h2>
+
+    <div id="messages"></div>
+
+    <div class="input-area">
+      <input id="input" placeholder="Ask Jimest..." />
+      <button onclick="send()">Send</button>
     </div>
   </div>
 
-  <script>
-    const messagesDiv = document.getElementById("messages");
-    const messageInput = document.getElementById("messageInput");
-    const sendButton = document.getElementById("sendButton");
+  <!-- RIGHT: ASSETS -->
+  <div class="panel">
+    <h3>📁 Saved Assets</h3>
+    <div id="assets"></div>
+  </div>
 
-    function addMessage(text, sender) {
-      const div = document.createElement("div");
-      div.className = "message " + sender;
+</div>
 
-      const marker = "## Next Step Options";
-      const markerIndex = text.indexOf(marker);
+<script>
+const messages = document.getElementById("messages");
+const input = document.getElementById("input");
 
-      if (markerIndex !== -1) {
-        const mainText = text.substring(0, markerIndex).trim();
-        const optionsPart = text.substring(markerIndex + marker.length).trim();
+function addMessage(text, type) {
+  const div = document.createElement("div");
+  div.className = "message " + type;
 
-        const textBlock = document.createElement("div");
-        textBlock.textContent = mainText;
-        div.appendChild(textBlock);
+  if (text.includes("## Next Step Options")) {
+    const parts = text.split("## Next Step Options");
 
-        const buttonContainer = document.createElement("div");
-        buttonContainer.className = "option-buttons";
+    div.innerHTML = parts[0];
 
-        const lines = optionsPart.split("\n");
+    const btnContainer = document.createElement("div");
+    btnContainer.className = "option-buttons";
 
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
-          const match = line.match(/^\d+\.\s+(.*)$/);
-
-          if (match) {
-            const optionText = match[1];
-
-            const btn = document.createElement("button");
-            btn.className = "option-button";
-            btn.textContent = optionText;
-
-            btn.onclick = function () {
-              sendMessage(optionText);
-            };
-
-            buttonContainer.appendChild(btn);
-          }
-        }
-
-        div.appendChild(buttonContainer);
-      } else {
-        div.textContent = text;
-      }
-
-      messagesDiv.appendChild(div);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    async function loadMemory() {
-      try {
-        const res = await fetch("/memory");
-        const data = await res.json();
-
-        document.getElementById("memoryContent").innerHTML = `
-          <p><strong>Idea:</strong> ${data.businessIdea}</p>
-          <p><strong>Target:</strong> ${data.targetCustomer}</p>
-          <p><strong>Budget:</strong> ${data.budget}</p>
-          <p><strong>Stage:</strong> ${data.stage}</p>
-          <p><strong>Next:</strong> ${data.nextStep}</p>
-        `;
-      } catch (err) {
-        document.getElementById("memoryContent").innerText = "Error loading memory";
-      }
-    }
-
-    async function loadAssets() {
-      try {
-        const res = await fetch("/assets");
-        const assets = await res.json();
-        const assetsContent = document.getElementById("assetsContent");
-
-        if (!assets.length) {
-          assetsContent.innerText = "No assets saved yet.";
-          return;
-        }
-
-        assetsContent.innerHTML = "";
-
-        assets.forEach(asset => {
-          const div = document.createElement("div");
-          div.className = "asset";
-
-          const title = document.createElement("div");
-          title.className = "asset-title";
-          title.textContent = asset.title;
-
-          const content = document.createElement("div");
-          content.className = "asset-content";
-          content.textContent = asset.content;
-
-          div.appendChild(title);
-          div.appendChild(content);
-          assetsContent.appendChild(div);
-        });
-      } catch (err) {
-        document.getElementById("assetsContent").innerText = "Error loading assets";
-      }
-    }
-
-    async function sendMessage(customMessage) {
-      const message = customMessage || messageInput.value.trim();
-      if (!message) return;
-
-      addMessage("You: " + message, "user");
-
-      if (!customMessage) {
-        messageInput.value = "";
-      }
-
-      try {
-        const response = await fetch("/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ message: message })
-        });
-
-        const data = await response.json();
-
-        if (data.reply) {
-          addMessage("Jimest: " + data.reply, "assistant");
-          loadMemory();
-          loadAssets();
-        } else if (data.error) {
-          addMessage("Error: " + data.error, "assistant");
-        } else {
-          addMessage("Jimest: No response received.", "assistant");
-        }
-      } catch (error) {
-        addMessage("Error: Could not reach Jimest.", "assistant");
-      }
-    }
-
-    sendButton.addEventListener("click", function () {
-      sendMessage();
-    });
-
-    messageInput.addEventListener("keypress", function (event) {
-      if (event.key === "Enter") {
-        sendMessage();
+    parts[1].split("\n").forEach(line => {
+      const match = line.match(/\d+\.\s(.+)/);
+      if (match) {
+        const btn = document.createElement("button");
+        btn.innerText = match[1];
+        btn.onclick = () => send(match[1]);
+        btnContainer.appendChild(btn);
       }
     });
 
-    loadMemory();
-    loadAssets();
-  </script>
+    div.appendChild(btnContainer);
+  } else {
+    div.innerText = text;
+  }
+
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function send(msg) {
+  const message = msg || input.value;
+  if (!message) return;
+
+  addMessage("You: " + message, "user");
+  input.value = "";
+
+  const res = await fetch("/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ message })
+  });
+
+  const data = await res.json();
+
+  addMessage("Jimest: " + data.reply, "assistant");
+
+  loadMemory();
+  loadAssets();
+}
+
+async function loadMemory() {
+  const res = await fetch("/memory");
+  const data = await res.json();
+
+  document.getElementById("memory").innerHTML = `
+    Idea: ${data.businessIdea}<br>
+    Target: ${data.targetCustomer}<br>
+    Budget: ${data.budget}<br>
+    Stage: ${data.stage}<br>
+    Next: ${data.nextStep}
+  `;
+}
+
+async function loadAssets() {
+  const res = await fetch("/assets");
+  const data = await res.json();
+
+  const container = document.getElementById("assets");
+
+  if (!data.length) {
+    container.innerText = "No assets yet.";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  data.forEach(a => {
+    const div = document.createElement("div");
+    div.style.marginBottom = "10px";
+    div.style.borderBottom = "1px solid #334155";
+    div.style.paddingBottom = "5px";
+
+    div.innerHTML = `
+      <b>${a.title}</b><br>
+      <small>${a.content.substring(0, 100)}...</small>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+loadMemory();
+loadAssets();
+</script>
+
 </body>
 </html>
