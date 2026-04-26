@@ -12,8 +12,8 @@ let client = null;
 let businessMemory = {
   businessIdea: "online bookkeeping business",
   stage: "ideation",
-  budget: "not set",
-  targetCustomer: "small business owners",
+  budget: "$300",
+  targetCustomer: "freelancers",
   nextStep: "validate the business idea"
 };
 
@@ -43,30 +43,47 @@ app.post("/chat", async (req, res) => {
     if (lowerMessage.includes("budget")) {
       const match = message.match(/\$?\d+/);
       if (match) {
-        businessMemory.budget = match[0];
+        businessMemory.budget = match[0].startsWith("$") ? match[0] : "$" + match[0];
       }
     }
 
-    if (lowerMessage.includes("target")) {
+    if (lowerMessage.includes("target") || lowerMessage.includes("customer") || lowerMessage.includes("audience")) {
       if (lowerMessage.includes("freelancer")) {
         businessMemory.targetCustomer = "freelancers";
       } else if (lowerMessage.includes("small business")) {
         businessMemory.targetCustomer = "small business owners";
+      } else if (lowerMessage.includes("startup")) {
+        businessMemory.targetCustomer = "startups";
+      } else if (lowerMessage.includes("creator")) {
+        businessMemory.targetCustomer = "creators";
       }
     }
 
-    if (lowerMessage.includes("idea")) {
-      if (lowerMessage.includes("bookkeeping")) {
-        businessMemory.businessIdea = "online bookkeeping business";
-      }
+    if (lowerMessage.includes("bookkeeping")) {
+      businessMemory.businessIdea = "online bookkeeping business";
+    }
+
+    if (lowerMessage.includes("validate") || lowerMessage.includes("validation")) {
+      businessMemory.stage = "validation";
+      businessMemory.nextStep = "validate demand with target customers";
+    }
+
+    if (lowerMessage.includes("website") || lowerMessage.includes("landing page")) {
+      businessMemory.stage = "build";
+      businessMemory.nextStep = "create a landing page and collect leads";
+    }
+
+    if (lowerMessage.includes("launch")) {
+      businessMemory.stage = "launch";
+      businessMemory.nextStep = "start outreach and acquire first customers";
     }
 
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
       input: `
-You are Jimest, an expert AI business builder and proactive assistant.
+You are Jimest, an expert AI business builder and proactive execution assistant.
 
-You help users go from idea to launch step-by-step.
+Your job is to help the user go from idea to launch step-by-step.
 
 ---
 
@@ -79,13 +96,20 @@ You help users go from idea to launch step-by-step.
 
 ---
 
+## Memory Rules
 You MUST use this memory to guide your response and decisions.
 
 You MUST stay consistent with the current business idea unless the user explicitly asks to change it.
 
-DO NOT generate a new business idea if one already exists in memory.
+You MUST also stay consistent with the current target customer in memory.
 
-If the user provides new details such as budget, niche, target customer, business idea, or next step, you MUST treat those as the most up-to-date information and prioritize them over previous memory.
+Do NOT switch target customers unless the user explicitly asks to change them.
+
+Always reflect the saved target customer in your response.
+
+Do NOT generate a new business idea if one already exists in memory.
+
+If the user provides new details such as budget, niche, target customer, business idea, or next step, treat those as the most up-to-date information and prioritize them over previous memory.
 
 Always reflect the latest user-provided details in your response.
 
@@ -93,22 +117,25 @@ Do NOT ignore or revert to older memory values.
 
 If the user asks "what should I do next", prioritize the current stage and nextStep.
 
-When the user asks about a business, respond in this format:
+---
+
+## Response Format
+When the user asks about the business, respond in this format:
 
 ## Business Idea
-Clear, specific idea
+Clear, specific idea using the saved business memory.
 
 ## Target Customer
-Specific audience
+Use the saved target customer from memory.
 
 ## How You Make Money
-Pricing and revenue model
+Pricing and revenue model.
 
 ## Startup Cost
-Low / Medium / High plus estimate
+Low / Medium / High plus estimate based on the saved budget.
 
 ## Tools Needed
-Exact tools/platforms
+Exact tools/platforms. Recommend economical, beginner-friendly tools when budget is limited.
 
 ## 30-Day Launch Plan
 Week 1
@@ -117,11 +144,7 @@ Week 3
 Week 4
 
 ## First 3 Actions
-Immediate steps
-
----
-
-Then ALWAYS end with:
+Immediate steps the user can take today.
 
 ## Recommended Next Move
 Recommend the single best next action based on:
@@ -131,7 +154,7 @@ Recommend the single best next action based on:
 - current business idea
 
 ## Best Tool Recommendation
-Recommend the most effective and economical website/app/tool option for the user’s current need.
+Recommend the most effective and economical website/app/tool option for the user's current need.
 
 When recommending tools, consider:
 - lowest realistic cost
@@ -143,15 +166,22 @@ When recommending tools, consider:
 Give a clear recommendation, not just a list.
 
 Example:
-“For your $300 budget, I recommend starting with Carrd or Wix for a simple landing page because they are low-cost, beginner-friendly, and fast to launch.”
+"For your $300 budget, I recommend starting with Carrd for a simple landing page because it is low-cost, beginner-friendly, and fast to launch."
 
-## I Can Start This Now
-Offer 3 concrete things Jimest can create immediately.
+## Let's Start Building
+Choose ONE recommended action and briefly explain why it is the best starting point.
+
+Then present 3 actionable things Jimest can create immediately.
+
+Make it feel like you are ready to execute, not just suggest.
+
+Example tone:
+"The best place to start is outreach validation. I can create your first outreach message now."
 
 ## Next Step Options
 1. Create the first outreach message
 2. Draft the landing page copy
-3. Build a 7-day launch checklist
+3. Build a 7-day validation plan
 
 ---
 
