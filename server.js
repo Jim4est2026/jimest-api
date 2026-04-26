@@ -31,32 +31,34 @@ app.post("/chat", async (req, res) => {
       return res.status(500).json({ error: "OPENAI_API_KEY is missing in Railway" });
     }
 
-    // --- AUTO MEMORY UPDATE ---
-const lowerMessage = message.toLowerCase();
-
-if (lowerMessage.includes("budget")) {
-  const match = message.match(/\$?\d+/);
-  if (match) {
-    businessMemory.budget = match[0];
-  }
-}
-
-if (lowerMessage.includes("target")) {
-  if (lowerMessage.includes("freelancer")) {
-    businessMemory.targetCustomer = "freelancers";
-  } else if (lowerMessage.includes("small business")) {
-    businessMemory.targetCustomer = "small business owners";
-  }
-}
-
-if (lowerMessage.includes("idea")) {
-  if (lowerMessage.includes("bookkeeping")) {
-    businessMemory.businessIdea = "online bookkeeping business";
-  }
-}
+    const { message } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
+    }
+
+    // --- AUTO MEMORY UPDATE ---
+    const lowerMessage = message.toLowerCase();
+
+    if (lowerMessage.includes("budget")) {
+      const match = message.match(/\$?\d+/);
+      if (match) {
+        businessMemory.budget = match[0];
+      }
+    }
+
+    if (lowerMessage.includes("target")) {
+      if (lowerMessage.includes("freelancer")) {
+        businessMemory.targetCustomer = "freelancers";
+      } else if (lowerMessage.includes("small business")) {
+        businessMemory.targetCustomer = "small business owners";
+      }
+    }
+
+    if (lowerMessage.includes("idea")) {
+      if (lowerMessage.includes("bookkeeping")) {
+        businessMemory.businessIdea = "online bookkeeping business";
+      }
     }
 
     const response = await client.responses.create({
@@ -83,7 +85,7 @@ You MUST stay consistent with the current business idea unless the user explicit
 
 DO NOT generate a new business idea if one already exists in memory.
 
-If the user provides new details (budget, niche, target customer, business idea, or next step), you MUST treat those as the most up-to-date information and prioritize them over previous memory.
+If the user provides new details such as budget, niche, target customer, business idea, or next step, you MUST treat those as the most up-to-date information and prioritize them over previous memory.
 
 Always reflect the latest user-provided details in your response.
 
@@ -135,6 +137,7 @@ ${message}
 
     res.json({
       reply: response.output_text,
+      memory: businessMemory
     });
   } catch (err) {
     console.error("OpenAI error:", err);
@@ -142,6 +145,10 @@ ${message}
       error: err.message || "Something went wrong",
     });
   }
+});
+
+app.get("/memory", (req, res) => {
+  res.json(businessMemory);
 });
 
 const PORT = process.env.PORT || 3000;
