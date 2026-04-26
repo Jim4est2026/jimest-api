@@ -9,20 +9,44 @@
       font-family: Arial, sans-serif;
       background: #111827;
       color: white;
+      min-height: 100vh;
+      margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      margin: 0;
     }
 
-    .chat-container {
-      width: 90%;
-      max-width: 800px;
+    .app-layout {
+      display: grid;
+      grid-template-columns: 260px minmax(400px, 800px) 300px;
+      gap: 20px;
+      width: 95%;
+      max-width: 1400px;
+      align-items: start;
+    }
+
+    .panel, .chat-container {
       background: #1f2937;
       border-radius: 16px;
       padding: 20px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .panel {
+      font-size: 14px;
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+
+    #memoryContent p {
+      margin: 8px 0;
+    }
+
+    .chat-container {
+      width: 100%;
     }
 
     h1 {
@@ -104,36 +128,54 @@
       background: #4f46e5;
     }
 
-    #memoryPanel {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #1f2937;
-      padding: 15px;
-      border-radius: 12px;
-      width: 250px;
-      font-size: 14px;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    .asset {
+      background: #111827;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #374151;
     }
 
-    #memoryContent p {
-      margin: 8px 0;
+    .asset-title {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .asset-content {
+      font-size: 12px;
+      color: #d1d5db;
+      max-height: 100px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 1000px) {
+      .app-layout {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="memoryPanel">
-    <strong>🧠 Jimest Memory</strong>
-    <div id="memoryContent">Loading...</div>
-  </div>
+  <div class="app-layout">
+    <div class="panel">
+      <h2>🧠 Jimest Memory</h2>
+      <div id="memoryContent">Loading...</div>
+    </div>
 
-  <div class="chat-container">
-    <h1>Jimest</h1>
-    <div id="messages"></div>
+    <div class="chat-container">
+      <h1>Jimest</h1>
+      <div id="messages"></div>
 
-    <div class="input-row">
-      <input id="messageInput" type="text" placeholder="Ask Jimest something..." />
-      <button id="sendButton">Send</button>
+      <div class="input-row">
+        <input id="messageInput" type="text" placeholder="Ask Jimest something..." />
+        <button id="sendButton">Send</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>📁 Saved Assets</h2>
+      <div id="assetsContent">No assets saved yet.</div>
     </div>
   </div>
 
@@ -207,6 +249,40 @@
       }
     }
 
+    async function loadAssets() {
+      try {
+        const res = await fetch("/assets");
+        const assets = await res.json();
+        const assetsContent = document.getElementById("assetsContent");
+
+        if (!assets.length) {
+          assetsContent.innerText = "No assets saved yet.";
+          return;
+        }
+
+        assetsContent.innerHTML = "";
+
+        assets.forEach(asset => {
+          const div = document.createElement("div");
+          div.className = "asset";
+
+          const title = document.createElement("div");
+          title.className = "asset-title";
+          title.textContent = asset.title;
+
+          const content = document.createElement("div");
+          content.className = "asset-content";
+          content.textContent = asset.content;
+
+          div.appendChild(title);
+          div.appendChild(content);
+          assetsContent.appendChild(div);
+        });
+      } catch (err) {
+        document.getElementById("assetsContent").innerText = "Error loading assets";
+      }
+    }
+
     async function sendMessage(customMessage) {
       const message = customMessage || messageInput.value.trim();
       if (!message) return;
@@ -231,6 +307,7 @@
         if (data.reply) {
           addMessage("Jimest: " + data.reply, "assistant");
           loadMemory();
+          loadAssets();
         } else if (data.error) {
           addMessage("Error: " + data.error, "assistant");
         } else {
@@ -252,6 +329,7 @@
     });
 
     loadMemory();
+    loadAssets();
   </script>
 </body>
 </html>

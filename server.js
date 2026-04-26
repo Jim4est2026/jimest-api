@@ -17,6 +17,8 @@ let businessMemory = {
   nextStep: "validate the business idea"
 };
 
+let savedAssets = [];
+
 if (process.env.OPENAI_API_KEY) {
   client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -37,7 +39,6 @@ app.post("/chat", async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    // --- AUTO MEMORY UPDATE ---
     const lowerMessage = message.toLowerCase();
 
     if (lowerMessage.includes("budget")) {
@@ -85,57 +86,36 @@ You are Jimest, an expert AI business builder and proactive execution assistant.
 
 Your job is to help the user go from idea to launch step-by-step.
 
----
-
-## Current Business Memory
+Current Business Memory:
 - Business idea: ${businessMemory.businessIdea}
 - Stage: ${businessMemory.stage}
 - Budget: ${businessMemory.budget}
 - Target customer: ${businessMemory.targetCustomer}
 - Next step: ${businessMemory.nextStep}
 
----
+Memory Rules:
+- Use this memory to guide every response.
+- Stay consistent with the current business idea unless the user explicitly asks to change it.
+- Stay consistent with the current target customer unless the user explicitly asks to change it.
+- If the user gives new details, treat them as the newest truth.
+- If the user asks what to do next, prioritize the current stage and next step.
 
-## Memory Rules
-You MUST use this memory to guide your response and decisions.
-
-You MUST stay consistent with the current business idea unless the user explicitly asks to change it.
-
-You MUST also stay consistent with the current target customer in memory.
-
-Do NOT switch target customers unless the user explicitly asks to change them.
-
-Always reflect the saved target customer in your response.
-
-Do NOT generate a new business idea if one already exists in memory.
-
-If the user provides new details such as budget, niche, target customer, business idea, or next step, treat those as the most up-to-date information and prioritize them over previous memory.
-
-Always reflect the latest user-provided details in your response.
-
-Do NOT ignore or revert to older memory values.
-
-If the user asks "what should I do next", prioritize the current stage and nextStep.
-
----
-
-## Response Format
-When the user asks about the business, respond in this format:
+Response Format:
 
 ## Business Idea
-Clear, specific idea using the saved business memory.
+Clear, specific idea using saved memory.
 
 ## Target Customer
-Use the saved target customer from memory.
+Use saved target customer.
 
 ## How You Make Money
 Pricing and revenue model.
 
 ## Startup Cost
-Low / Medium / High plus estimate based on the saved budget.
+Low / Medium / High plus estimate based on budget.
 
 ## Tools Needed
-Exact tools/platforms. Recommend economical, beginner-friendly tools when budget is limited.
+Recommend economical, beginner-friendly tools.
 
 ## 30-Day Launch Plan
 Week 1
@@ -144,58 +124,57 @@ Week 3
 Week 4
 
 ## First 3 Actions
-Immediate steps the user can take today.
+Immediate steps.
 
 ## Recommended Next Move
-Recommend the single best next action based on:
-- current business stage
-- budget
-- target customer
-- current business idea
+Recommend the best next action.
 
 ## Best Tool Recommendation
-Recommend the most effective and economical website/app/tool option for the user's current need.
-
-When recommending tools, consider:
-- lowest realistic cost
-- ease of use for a beginner
-- speed to launch
-- ability to grow later
-- whether a free plan or low-cost plan exists
-
-Give a clear recommendation, not just a list.
-
-Example:
-"For your $300 budget, I recommend starting with Carrd for a simple landing page because it is low-cost, beginner-friendly, and fast to launch."
+Recommend the most effective and economical tool.
 
 ## Let's Start Building
-
-Choose the single best starting action based on the user's stage, budget, and target customer.
-
-Then IMMEDIATELY begin creating the first asset for the user.
-
-After starting, still provide 3 clickable options so the user can choose a different path.
-
-Example behavior:
-"The best place to start is outreach validation. Here is your first outreach message:"
-
-Then generate the actual content.
+Choose the best starting action and immediately create the first useful asset.
 
 ## Next Step Options
 1. Create outreach message
 2. Build landing page copy
 3. Create validation plan
 
----
-
 User request:
 ${message}
 `,
     });
 
+    const reply = response.output_text;
+
+    const assetKeywords = [
+      "outreach message",
+      "landing page",
+      "validation plan",
+      "survey",
+      "email",
+      "website copy",
+      "pricing",
+      "action plan"
+    ];
+
+    const shouldSaveAsset = assetKeywords.some(keyword =>
+      lowerMessage.includes(keyword)
+    );
+
+    if (shouldSaveAsset) {
+      savedAssets.push({
+        id: savedAssets.length + 1,
+        title: message,
+        content: reply,
+        createdAt: new Date().toISOString()
+      });
+    }
+
     res.json({
-      reply: response.output_text,
-      memory: businessMemory
+      reply,
+      memory: businessMemory,
+      assets: savedAssets
     });
   } catch (err) {
     console.error("OpenAI error:", err);
@@ -207,6 +186,33 @@ ${message}
 
 app.get("/memory", (req, res) => {
   res.json(businessMemory);
+});
+
+app.get("/assets", (req, res) => {
+  res.json(savedAssets);
+});
+
+app.post("/assets", (req, res) => {
+  const { title, content } = req.body;
+
+  if (!title || !content) {
+    return res.status(400).json({ error: "Title and content are required" });
+  }
+
+  const asset = {
+    id: savedAssets.length + 1,
+    title,
+    content,
+    createdAt: new Date().toISOString()
+  };
+
+  savedAssets.push(asset);
+
+  res.json({
+    message: "Asset saved",
+    asset,
+    assets: savedAssets
+  });
 });
 
 const PORT = process.env.PORT || 3000;
