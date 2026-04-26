@@ -103,9 +103,30 @@
     .option-button:hover {
       background: #4f46e5;
     }
+
+    #memoryPanel {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #1f2937;
+      padding: 15px;
+      border-radius: 12px;
+      width: 250px;
+      font-size: 14px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+
+    #memoryContent p {
+      margin: 8px 0;
+    }
   </style>
 </head>
 <body>
+  <div id="memoryPanel">
+    <strong>🧠 Jimest Memory</strong>
+    <div id="memoryContent">Loading...</div>
+  </div>
+
   <div class="chat-container">
     <h1>Jimest</h1>
     <div id="messages"></div>
@@ -140,15 +161,18 @@
         buttonContainer.className = "option-buttons";
 
         const lines = optionsPart.split("\n");
+
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i].trim();
           const match = line.match(/^\d+\.\s+(.*)$/);
+
           if (match) {
             const optionText = match[1];
 
             const btn = document.createElement("button");
             btn.className = "option-button";
             btn.textContent = optionText;
+
             btn.onclick = function () {
               sendMessage(optionText);
             };
@@ -164,6 +188,23 @@
 
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function loadMemory() {
+      try {
+        const res = await fetch("/memory");
+        const data = await res.json();
+
+        document.getElementById("memoryContent").innerHTML = `
+          <p><strong>Idea:</strong> ${data.businessIdea}</p>
+          <p><strong>Target:</strong> ${data.targetCustomer}</p>
+          <p><strong>Budget:</strong> ${data.budget}</p>
+          <p><strong>Stage:</strong> ${data.stage}</p>
+          <p><strong>Next:</strong> ${data.nextStep}</p>
+        `;
+      } catch (err) {
+        document.getElementById("memoryContent").innerText = "Error loading memory";
+      }
     }
 
     async function sendMessage(customMessage) {
@@ -189,6 +230,7 @@
 
         if (data.reply) {
           addMessage("Jimest: " + data.reply, "assistant");
+          loadMemory();
         } else if (data.error) {
           addMessage("Error: " + data.error, "assistant");
         } else {
@@ -208,6 +250,8 @@
         sendMessage();
       }
     });
+
+    loadMemory();
   </script>
 </body>
 </html>
