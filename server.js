@@ -63,7 +63,8 @@ app.post("/chat", async (req, res) => {
       lowerMessage.includes("polish") ||
       lowerMessage.includes("shorten") ||
       lowerMessage.includes("append") ||
-      lowerMessage.includes("format");
+      lowerMessage.includes("format") ||
+      lowerMessage.includes("latest");
 
     // --- AUTO MEMORY UPDATE: business mode only ---
     if (!isContentRequest) {
@@ -74,7 +75,11 @@ app.post("/chat", async (req, res) => {
         }
       }
 
-      if (lowerMessage.includes("target") || lowerMessage.includes("customer") || lowerMessage.includes("audience")) {
+      if (
+        lowerMessage.includes("target") ||
+        lowerMessage.includes("customer") ||
+        lowerMessage.includes("audience")
+      ) {
         if (lowerMessage.includes("freelancer")) {
           businessMemory.targetCustomer = "freelancers";
         } else if (lowerMessage.includes("small business")) {
@@ -132,7 +137,7 @@ Do NOT reverse their ages or roles.
     const strictEditModeRules = `
 ## Strict Edit Mode Rules
 
-If the user asks to edit, upgrade, refine, improve, rewrite, polish, shorten, append, format, or modify existing content:
+If the user asks to edit, upgrade, refine, improve, rewrite, polish, shorten, append, format, modify, or use the latest saved asset:
 
 - You MUST preserve the existing structure.
 - You MUST preserve all existing titles.
@@ -142,10 +147,15 @@ If the user asks to edit, upgrade, refine, improve, rewrite, polish, shorten, ap
 - You MUST NOT create new titles.
 - You MUST NOT reduce or increase the number of pages unless the user explicitly asks.
 - You MUST NOT replace the user's concept with a new concept.
-- You MUST only transform the content the user provided or clearly referenced.
-- If the user does not provide the content to edit and you cannot access it from the current message, ask them to paste the content.
+- You MUST only transform the content provided in "Content to Edit".
+- If "Content to Edit" is provided, you MUST use it.
 - Output only the edited content unless the user asks for explanation.
 `;
+
+    const lastAsset =
+      savedAssets.length > 0
+        ? savedAssets[savedAssets.length - 1].content
+        : "";
 
     const contentPrompt = `
 You are Jimest in Content Creation Mode.
@@ -156,6 +166,15 @@ ${characterDefinitions}
 
 ${isEditRequest ? strictEditModeRules : ""}
 
+${
+  isEditRequest && lastAsset
+    ? `
+## Content to Edit (MANDATORY)
+${lastAsset}
+`
+    : ""
+}
+
 STRICT CONTENT RULES:
 - Do NOT use business sections.
 - Do NOT include Business Idea, Target Customer, Startup Cost, Tools Needed, Launch Plan, Recommended Next Move, or business advice.
@@ -165,6 +184,8 @@ STRICT CONTENT RULES:
 - Follow all constraints exactly, especially word count, age range, tone, format, and number of items.
 - If the user asks for books under 100 words, each book must be under 100 words.
 - If the user asks for illustration prompts, include Jack as older and Henrietta as younger in every relevant prompt.
+- If Content to Edit is provided, do NOT invent new titles, new scenes, or new page counts.
+- If Content to Edit is provided, only modify that content according to the user request.
 
 User request:
 ${message}
@@ -293,7 +314,8 @@ ${message}
       "story",
       "series",
       "illustration",
-      "prompt"
+      "prompt",
+      "asset"
     ];
 
     const shouldSaveAsset = assetKeywords.some(keyword =>
