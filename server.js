@@ -50,7 +50,9 @@ app.post("/chat", async (req, res) => {
       lowerMessage.includes("content") ||
       lowerMessage.includes("children") ||
       lowerMessage.includes("kids") ||
-      lowerMessage.includes("series");
+      lowerMessage.includes("series") ||
+      lowerMessage.includes("illustration") ||
+      lowerMessage.includes("prompt");
 
     // --- AUTO MEMORY UPDATE: business mode only ---
     if (!isContentRequest) {
@@ -93,10 +95,35 @@ app.post("/chat", async (req, res) => {
       }
     }
 
+    const characterDefinitions = `
+## Character Definitions (STRICT)
+
+Jack:
+- Older child
+- Curious, adventurous, expressive
+- Slightly taller than Henrietta
+
+Henrietta:
+- Younger child
+- Playful, imaginative, kind
+- Slightly smaller than Jack
+- Looks up to Jack
+
+These roles MUST remain consistent across:
+- stories
+- illustration prompts
+- character descriptions
+- all creative outputs
+
+Do NOT reverse their ages or roles.
+`;
+
     const contentPrompt = `
 You are Jimest in Content Creation Mode.
 
 The user is asking for creative/content output.
+
+${characterDefinitions}
 
 STRICT RULES:
 - Do NOT use business sections.
@@ -106,6 +133,7 @@ STRICT RULES:
 - Directly create the requested content.
 - Follow all constraints exactly, especially word count, age range, tone, format, and number of items.
 - If the user asks for books under 100 words, each book must be under 100 words.
+- If the user asks for illustration prompts, include Jack as older and Henrietta as younger in every relevant prompt.
 
 User request:
 ${message}
@@ -232,7 +260,9 @@ ${message}
       "action plan",
       "book",
       "story",
-      "series"
+      "series",
+      "illustration",
+      "prompt"
     ];
 
     const shouldSaveAsset = assetKeywords.some(keyword =>
