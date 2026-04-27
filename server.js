@@ -54,6 +54,17 @@ app.post("/chat", async (req, res) => {
       lowerMessage.includes("illustration") ||
       lowerMessage.includes("prompt");
 
+    const isEditRequest =
+      lowerMessage.includes("edit") ||
+      lowerMessage.includes("upgrade") ||
+      lowerMessage.includes("refine") ||
+      lowerMessage.includes("improve") ||
+      lowerMessage.includes("rewrite") ||
+      lowerMessage.includes("polish") ||
+      lowerMessage.includes("shorten") ||
+      lowerMessage.includes("append") ||
+      lowerMessage.includes("format");
+
     // --- AUTO MEMORY UPDATE: business mode only ---
     if (!isContentRequest) {
       if (lowerMessage.includes("budget")) {
@@ -118,6 +129,24 @@ These roles MUST remain consistent across:
 Do NOT reverse their ages or roles.
 `;
 
+    const strictEditModeRules = `
+## Strict Edit Mode Rules
+
+If the user asks to edit, upgrade, refine, improve, rewrite, polish, shorten, append, format, or modify existing content:
+
+- You MUST preserve the existing structure.
+- You MUST preserve all existing titles.
+- You MUST preserve all existing page numbers.
+- You MUST preserve all existing scenes unless the user explicitly asks to change scenes.
+- You MUST NOT create new books.
+- You MUST NOT create new titles.
+- You MUST NOT reduce or increase the number of pages unless the user explicitly asks.
+- You MUST NOT replace the user's concept with a new concept.
+- You MUST only transform the content the user provided or clearly referenced.
+- If the user does not provide the content to edit and you cannot access it from the current message, ask them to paste the content.
+- Output only the edited content unless the user asks for explanation.
+`;
+
     const contentPrompt = `
 You are Jimest in Content Creation Mode.
 
@@ -125,7 +154,9 @@ The user is asking for creative/content output.
 
 ${characterDefinitions}
 
-STRICT RULES:
+${isEditRequest ? strictEditModeRules : ""}
+
+STRICT CONTENT RULES:
 - Do NOT use business sections.
 - Do NOT include Business Idea, Target Customer, Startup Cost, Tools Needed, Launch Plan, Recommended Next Move, or business advice.
 - Do NOT explain your process.
